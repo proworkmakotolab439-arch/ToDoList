@@ -10,21 +10,12 @@ window.APP_CONFIG = {
   ADMIN_USER: "admin",
   DEFAULT_ADMIN_PASS: "bell",
 
-  // メンバーのデフォルト初期パスワード
-  DEFAULT_MEMBER_PASS: "bell",
-
   // Supabase 接続情報
   SUPABASE_URL: "https://cdeilrrraattivjrjxxc.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_bxwBFYPmtMP8Vv_14zmvPg_-T5s8we2",
 
-  // デフォルトチームメンバー一覧（初期パスワード付き）
-  DEFAULT_MEMBERS: [
-    { name: "メンバーA", password: "bell" },
-    { name: "メンバーB", password: "bell" },
-    { name: "メンバーC", password: "bell" },
-    { name: "メンバーD", password: "bell" },
-    { name: "メンバーE", password: "bell" }
-  ],
+  // デフォルトチームメンバー一覧（空。各ユーザーが各自の個別パスワードで新規登録または管理者が設定）
+  DEFAULT_MEMBERS: [],
 
   // デフォルトカテゴリー一覧（自由追加・変更可）
   DEFAULT_CATEGORIES: ["業務", "会議", "雑務", "開発", "連絡", "その他"]

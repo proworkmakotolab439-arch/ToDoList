@@ -43,12 +43,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ログインモーダル
     passcodeModal: document.getElementById("passcode-modal"),
-    loginUserSelect: document.getElementById("login-user-select"),
+    loginUserInput: document.getElementById("login-user-input"),
     passcodeInput: document.getElementById("passcode-input"),
     passcodeSubmitBtn: document.getElementById("passcode-submit-btn"),
     passcodeError: document.getElementById("passcode-error"),
     togglePasswordVisibility: document.getElementById("toggle-password-visibility"),
     eyeIcon: document.getElementById("eye-icon"),
+    openRegisterBtn: document.getElementById("open-register-btn"),
+
+    // 新規ユーザー登録モーダル
+    registerModal: document.getElementById("register-modal"),
+    registerNameInput: document.getElementById("register-name-input"),
+    registerPassInput: document.getElementById("register-pass-input"),
+    registerPassConfirmInput: document.getElementById("register-pass-confirm-input"),
+    registerError: document.getElementById("register-error"),
+    registerSubmitBtn: document.getElementById("register-submit-btn"),
+    closeRegisterBtn: document.getElementById("close-register-btn"),
 
     // パスワード変更モーダル（個人用）
     userPasswordModal: document.getElementById("user-password-modal"),
@@ -119,6 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
      初期化処理
      ========================================================================== */
   async function init() {
+    // 古いキャッシュHTMLによる初期パスワード案内が万が一DOMに残っていた場合の強制クリーンアップ
+    document.querySelectorAll("div, p, span").forEach(el => {
+      const text = el.textContent || "";
+      if (text.includes("管理者:") && text.includes("bell") && text.includes("初期パスワード")) {
+        el.remove();
+      }
+    });
+
     setupEventListeners();
 
     calendarInstance = new CalendarView("calendar-container", (selectedDate, dayTasks) => {
@@ -159,25 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // UIのセレクトボックス類を更新
-    populateLoginUserOptions();
     populateMemberOptions();
     populateCategoryOptions();
-  }
-
-  // ログイン画面のユーザー選択肢を生成
-  function populateLoginUserOptions() {
-    const members = state.systemSettings.members || [];
-    let html = `<option value="" selected></option>`;
-    html += `<option value="admin">admin</option>`;
-    if (members.length > 0) {
-      html += `<optgroup label="チームメンバー">`;
-      members.forEach(m => {
-        html += `<option value="${m.name}">${m.name}</option>`;
-      });
-      html += `</optgroup>`;
-    }
-    dom.loginUserSelect.innerHTML = html;
-    dom.loginUserSelect.value = "";
   }
 
   // メンバーセレクトボックスの選択肢構築
@@ -240,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* ==========================================================================
-     認証フロー（ユーザー＆パスワード）
+     認証フロー（ユーザー名手入力 ＆ 個別パスワード）
      ========================================================================== */
   function checkAuth() {
     const isAuth = localStorage.getItem("app_authenticated");
@@ -256,21 +257,23 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       state.isAuthenticated = false;
       dom.passcodeModal.classList.remove("hidden");
-      dom.loginUserSelect.value = "";
+      if (dom.loginUserInput) dom.loginUserInput.value = "";
       dom.passcodeInput.value = "";
-      setTimeout(() => dom.loginUserSelect.focus(), 150);
+      setTimeout(() => {
+        if (dom.loginUserInput) dom.loginUserInput.focus();
+      }, 150);
     }
   }
 
-  // ログイン処理
+  // ログイン処理（個別パスワードによる厳密認証）
   function handleLoginSubmit() {
-    const selectedUser = dom.loginUserSelect.value;
+    const inputUser = dom.loginUserInput ? dom.loginUserInput.value.trim() : "";
     const inputPass = dom.passcodeInput.value.trim();
 
-    if (!selectedUser) {
-      dom.passcodeError.textContent = "ユーザーを選択してください";
+    if (!inputUser) {
+      dom.passcodeError.textContent = "ユーザー名を入力してください";
       dom.passcodeError.classList.remove("hidden");
-      dom.loginUserSelect.focus();
+      if (dom.loginUserInput) dom.loginUserInput.focus();
       return;
     }
 
@@ -284,7 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let isValid = false;
     let role = "member";
 
-    if (selectedUser === "admin") {
+    if (inputUser === "admin") {
       // 管理者ログイン
       const adminPass = state.systemSettings.adminPassword || window.APP_CONFIG.DEFAULT_ADMIN_PASS;
       if (inputPass === adminPass) {
@@ -292,11 +295,10 @@ document.addEventListener("DOMContentLoaded", () => {
         role = "admin";
       }
     } else {
-      // 一般メンバーログイン
+      // 一般メンバーログイン（登録済みかつ個別に設定されたパスワードと一致する場合のみ許可）
       const members = state.systemSettings.members || [];
-      const member = members.find(m => m.name === selectedUser);
-      const expectedPass = member ? (member.password || window.APP_CONFIG.DEFAULT_MEMBER_PASS) : window.APP_CONFIG.DEFAULT_MEMBER_PASS;
-      if (inputPass === expectedPass) {
+      const member = members.find(m => m.name === inputUser);
+      if (member && member.password && member.password === inputPass) {
         isValid = true;
         role = "member";
       }
@@ -304,11 +306,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (isValid) {
       state.isAuthenticated = true;
-      state.currentUser = selectedUser;
+      state.currentUser = inputUser;
       state.currentUserRole = role;
 
       localStorage.setItem("app_authenticated", "true");
-      localStorage.setItem("current_user_name", selectedUser);
+      localStorage.setItem("current_user_name", inputUser);
       localStorage.setItem("current_user_role", role);
 
       dom.passcodeModal.classList.add("hidden");
@@ -316,14 +318,112 @@ document.addEventListener("DOMContentLoaded", () => {
       dom.passcodeInput.value = "";
 
       updateHeaderUserUI();
-      showToast(`${selectedUser === 'admin' ? 'admin' : selectedUser} としてログインしました`, "success");
+      showToast(`${inputUser === 'admin' ? 'admin' : inputUser} としてログインしました`, "success");
       loadTasks();
     } else {
-      dom.passcodeError.textContent = "パスワードが一致しません";
+      dom.passcodeError.textContent = "ユーザー名またはパスワードが一致しません";
       dom.passcodeError.classList.remove("hidden");
       dom.passcodeInput.value = "";
       dom.passcodeInput.focus();
     }
+  }
+
+  /* ==========================================================================
+     新規ユーザー登録モーダル（個別パスワードの初回設定）
+     ========================================================================== */
+  function openRegisterModal() {
+    dom.passcodeModal.classList.add("hidden");
+    dom.registerModal.classList.remove("hidden");
+    dom.registerNameInput.value = "";
+    dom.registerPassInput.value = "";
+    dom.registerPassConfirmInput.value = "";
+    dom.registerError.classList.add("hidden");
+    setTimeout(() => dom.registerNameInput.focus(), 150);
+  }
+
+  function closeRegisterModal() {
+    dom.registerModal.classList.add("hidden");
+    dom.passcodeModal.classList.remove("hidden");
+    dom.registerError.classList.add("hidden");
+    setTimeout(() => {
+      if (dom.loginUserInput) dom.loginUserInput.focus();
+    }, 150);
+  }
+
+  async function handleRegisterSubmit() {
+    const name = dom.registerNameInput.value.trim();
+    const pass = dom.registerPassInput.value.trim();
+    const passConfirm = dom.registerPassConfirmInput.value.trim();
+
+    if (!name) {
+      dom.registerError.textContent = "お名前（ユーザー名）を入力してください";
+      dom.registerError.classList.remove("hidden");
+      dom.registerNameInput.focus();
+      return;
+    }
+
+    if (name === "全員" || name === "admin") {
+      dom.registerError.textContent = "「全員」「admin」は予約語のため使用できません";
+      dom.registerError.classList.remove("hidden");
+      dom.registerNameInput.focus();
+      return;
+    }
+
+    if (!pass) {
+      dom.registerError.textContent = "パスワードを入力してください";
+      dom.registerError.classList.remove("hidden");
+      dom.registerPassInput.focus();
+      return;
+    }
+
+    if (pass.length < 4) {
+      dom.registerError.textContent = "パスワードは4文字以上で入力してください";
+      dom.registerError.classList.remove("hidden");
+      dom.registerPassInput.focus();
+      return;
+    }
+
+    if (pass !== passConfirm) {
+      dom.registerError.textContent = "パスワード（確認）が一致しません";
+      dom.registerError.classList.remove("hidden");
+      dom.registerPassConfirmInput.focus();
+      return;
+    }
+
+    const members = state.systemSettings.members || [];
+    if (members.some(m => m.name === name)) {
+      dom.registerError.textContent = "このユーザー名は既に使用されています。別の名前を入力するかログインしてください。";
+      dom.registerError.classList.remove("hidden");
+      dom.registerNameInput.focus();
+      return;
+    }
+
+    // 新規メンバー追加
+    members.push({ name, password: pass });
+    state.systemSettings.members = members;
+
+    // クラウド（Supabase）へ即時保存して全端末に同期
+    await dbService.saveSettings(state.systemSettings);
+
+    // メンバー選択肢の再構築
+    populateMemberOptions();
+
+    // 登録完了後、自動ログイン
+    state.isAuthenticated = true;
+    state.currentUser = name;
+    state.currentUserRole = "member";
+
+    localStorage.setItem("app_authenticated", "true");
+    localStorage.setItem("current_user_name", name);
+    localStorage.setItem("current_user_role", "member");
+
+    dom.registerModal.classList.add("hidden");
+    dom.passcodeModal.classList.add("hidden");
+    dom.registerError.classList.add("hidden");
+
+    updateHeaderUserUI();
+    showToast(`${name} さんの登録が完了しました`, "success");
+    loadTasks();
   }
 
   // ヘッダーのユーザー情報と権限UIの更新
@@ -360,10 +460,12 @@ document.addEventListener("DOMContentLoaded", () => {
     closeTaskModal();
 
     dom.passcodeModal.classList.remove("hidden");
+    if (dom.loginUserInput) dom.loginUserInput.value = "";
     dom.passcodeInput.value = "";
     dom.passcodeError.classList.add("hidden");
-    populateLoginUserOptions();
-    setTimeout(() => dom.loginUserSelect.focus(), 150);
+    setTimeout(() => {
+      if (dom.loginUserInput) dom.loginUserInput.focus();
+    }, 150);
 
     showToast("ログアウトしました", "info");
   }
@@ -1049,9 +1151,40 @@ document.addEventListener("DOMContentLoaded", () => {
   function setupEventListeners() {
     // ログイン処理
     dom.passcodeSubmitBtn.addEventListener("click", handleLoginSubmit);
+    if (dom.loginUserInput) {
+      dom.loginUserInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") dom.passcodeInput.focus();
+      });
+    }
     dom.passcodeInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") handleLoginSubmit();
     });
+
+    // 新規ユーザー登録モーダル操作
+    if (dom.openRegisterBtn) {
+      dom.openRegisterBtn.addEventListener("click", openRegisterModal);
+    }
+    if (dom.closeRegisterBtn) {
+      dom.closeRegisterBtn.addEventListener("click", closeRegisterModal);
+    }
+    if (dom.registerSubmitBtn) {
+      dom.registerSubmitBtn.addEventListener("click", handleRegisterSubmit);
+    }
+    if (dom.registerNameInput) {
+      dom.registerNameInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") dom.registerPassInput.focus();
+      });
+    }
+    if (dom.registerPassInput) {
+      dom.registerPassInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") dom.registerPassConfirmInput.focus();
+      });
+    }
+    if (dom.registerPassConfirmInput) {
+      dom.registerPassConfirmInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") handleRegisterSubmit();
+      });
+    }
 
     // パスワード表示/非表示トグル
     dom.togglePasswordVisibility.addEventListener("click", () => {
