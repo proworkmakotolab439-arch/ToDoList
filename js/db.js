@@ -4,6 +4,7 @@
 class DBService {
   constructor() {
     this.client = null;
+    this.CONFIG_ROW_ID = "00000000-0000-0000-0000-000000000001";
     this.initClient();
   }
 
@@ -33,22 +34,124 @@ class DBService {
   }
 
   /**
-   * タスク一覧の取得
+   * システム設定（メンバー、カテゴリー、パスワード等）の取得
+   * 全端末（他の携帯など）で設定を同期するための処理
+   */
+  async getAppSettings() {
+    if (!this.isConfigured()) {
+      return this.getLocalMockSettings();
+    }
+
+    try {
+      // 1. app_settings テーブルからの取得を試みる
+      try {
+        const { data, error } = await this.client
+          .from("app_settings")
+          .select("value")
+          .eq("key", "global_config")
+          .maybeSingle();
+
+        if (!error && data && data.value) {
+          return { success: true, data: data.value };
+        }
+      } catch (e) {
+        // app_settings テーブルが存在しない場合はフォールバックへ進む
+      }
+
+      // 2. tasks テーブル上のシステム設定レコードからの取得（フォールバック）
+      const { data, error } = await this.client
+        .from("tasks")
+        .select("description")
+        .eq("id", this.CONFIG_ROW_ID)
+        .maybeSingle();
+
+      if (!error && data && data.description) {
+        const parsed = JSON.parse(data.description);
+        return { success: true, data: parsed };
+      }
+
+      // Supabase上にもまだ設定がない場合はローカルキャッシュまたはデフォルトを返す
+      return this.getLocalMockSettings();
+    } catch (error) {
+      console.warn("設定取得フォールバック実行:", error);
+      return this.getLocalMockSettings();
+    }
+  }
+
+  /**
+   * システム設定の保存（SupabaseへUPSERTして全端末同期）
+   */
+  async saveAppSettings(settings) {
+    // ローカルにも即時保存
+    localStorage.setItem("app_system_settings", JSON.stringify(settings));
+
+    if (!this.isConfigured()) {
+      return { success: true, data: settings, isLocalMock: true };
+    }
+
+    let saved = false;
+
+    // 1. app_settings テーブルへの保存を試みる
+    try {
+      const { error } = await this.client
+        .from("app_settings")
+        .upsert({
+          key: "global_config",
+          value: settings,
+          updated_at: new Date().toISOString()
+        });
+
+      if (!error) {
+        saved = true;
+      }
+    } catch (e) {
+      // テーブルがない場合は次へ
+    }
+
+    // 2. tasks テーブルの設定レコードへUPSERT（確実に全携帯で同期可能にするフォールバック）
+    try {
+      const { error } = await this.client
+        .from("tasks")
+        .upsert({
+          id: this.CONFIG_ROW_ID,
+          title: "__SYSTEM_CONFIG__",
+          description: JSON.stringify(settings),
+          assignee: "システム",
+          scope: "all",
+          priority: "low",
+          category: "システム",
+          is_completed: true,
+          due_date: null
+        });
+
+      if (!error) {
+        saved = true;
+      }
+    } catch (e) {
+      console.error("設定のSupabase保存エラー:", e);
+    }
+
+    return { success: saved, data: settings };
+  }
+
+  /**
+   * タスク一覧の取得（システム設定レコードは除外）
    */
   async getTasks() {
     if (!this.isConfigured()) {
-      // Supabase未設定の場合はLocalStorageのモックデータを利用
       return this.getLocalMockTasks();
     }
 
     try {
       const { data, error } = await this.client
-        .from('tasks')
-        .select('*')
-        .order('due_date', { ascending: true, nullsFirst: false });
+        .from("tasks")
+        .select("*")
+        .neq("id", this.CONFIG_ROW_ID)
+        .neq("title", "__SYSTEM_CONFIG__")
+        .order("due_date", { ascending: true, nullsFirst: false });
 
       if (error) throw error;
-      return { success: true, data };
+      return { success: true, data: data || [] };
     } catch (error) {
       console.error("タスク取得エラー:", error);
       return { success: false, error: error.message };
@@ -65,7 +168,7 @@ class DBService {
 
     try {
       const { data, error } = await this.client
-        .from('tasks')
+        .from("tasks")
         .insert([task])
         .select();
 
@@ -87,9 +190,9 @@ class DBService {
 
     try {
       const { data, error } = await this.client
-        .from('tasks')
+        .from("tasks")
         .update(updates)
-        .eq('id', id)
+        .eq("id", id)
         .select();
 
       if (error) throw error;
@@ -110,9 +213,9 @@ class DBService {
 
     try {
       const { error } = await this.client
-        .from('tasks')
+        .from("tasks")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
       return { success: true };
@@ -123,8 +226,25 @@ class DBService {
   }
 
   /* -------------------------------------------------------------
-     ローカルモック用（Supabase未設定時でもUI動作確認できるようにする）
+     ローカルモック・設定キャッシュ
   ------------------------------------------------------------- */
+  getLocalMockSettings() {
+    const cached = localStorage.getItem("app_system_settings");
+    if (cached) {
+      try {
+        return { success: true, data: JSON.parse(cached), isLocalMock: true };
+      } catch (e) {}
+    }
+
+    // デフォルト値
+    const defaultSettings = {
+      adminPassword: window.APP_CONFIG.DEFAULT_ADMIN_PASS,
+      members: window.APP_CONFIG.DEFAULT_MEMBERS,
+      categories: window.APP_CONFIG.DEFAULT_CATEGORIES
+    };
+    return { success: true, data: defaultSettings, isLocalMock: true };
+  }
+
   getLocalMockTasks() {
     let mock = JSON.parse(localStorage.getItem("mock_tasks") || "null");
     if (!mock) {

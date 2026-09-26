@@ -57,17 +57,24 @@
   <div id="app-container" class="w-full max-w-md mx-auto flex-1 flex flex-col bg-white dark:bg-slate-850 shadow-2xl relative min-h-screen">
     
     <!-- 1. トップバー / ヘッダー -->
-    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-850/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-2.5 safe-top flex items-center justify-between gap-2">
-      <!-- ユーザー選択ドロップダウン -->
-      <div class="flex items-center gap-2 flex-1">
-        <select id="user-select" class="bg-slate-100 dark:bg-slate-800 border-none text-xs font-bold rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-200 cursor-pointer">
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-850/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 py-2.5 safe-top flex items-center justify-between gap-1.5">
+      <!-- ログイン中ユーザー表示 & 担当絞り込みセレクター -->
+      <div class="flex items-center gap-1.5 flex-1 min-w-0">
+        <!-- ログインユーザーバッジ -->
+        <div id="header-user-badge" class="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/60 dark:border-indigo-800/60 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-300 truncate shadow-2xs">
+          <span id="header-user-icon">👤</span>
+          <span id="header-user-name" class="truncate">ログイン中</span>
+        </div>
+
+        <!-- 全員タスク表示時の担当絞り込み（adminや全体閲覧用） -->
+        <select id="user-select" class="bg-slate-100 dark:bg-slate-800 border-none text-[11px] font-semibold rounded-xl px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 cursor-pointer hidden">
           <!-- JSで自動生成 -->
         </select>
       </div>
 
       <!-- ビュー切替トグル（リスト / カレンダー） -->
-      <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-        <button id="view-list-btn" class="p-1.5 rounded-md bg-white dark:bg-slate-700 shadow-xs text-indigo-600 dark:text-indigo-400" title="リスト表示">
+      <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg shrink-0">
+        <button id="view-list-btn" class="p-1.5 rounded-md bg-white dark:bg-slate-700 shadow-2xs text-indigo-600 dark:text-indigo-400" title="リスト表示">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
         </button>
         <button id="view-cal-btn" class="p-1.5 rounded-md text-slate-500 dark:text-slate-400" title="カレンダー表示">
@@ -75,9 +82,20 @@
         </button>
       </div>
 
-      <!-- 設定（Supabase/合言葉）ボタン -->
-      <button id="settings-btn" class="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="設定">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <!-- パスワード変更ボタン（一般ユーザー用） -->
+      <button id="change-password-btn" class="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0" title="パスワード変更">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+      </button>
+
+      <!-- 管理者設定ボタン（adminのみ表示） -->
+      <button id="settings-btn" class="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 hidden" title="管理者設定">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+
+      <!-- ログアウトボタン（常時表示で一目で分かる） -->
+      <button id="header-logout-btn" class="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 dark:bg-rose-950/50 dark:hover:bg-rose-900/70 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold transition-all shrink-0 border border-rose-200/60 dark:border-rose-800/60 shadow-2xs" title="ログアウト">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <span>ログアウト</span>
       </button>
     </header>
 
@@ -87,7 +105,7 @@
         全員タスク
       </button>
       <button id="tab-personal" class="flex-1 py-2 text-xs font-medium text-center text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors">
-        個人タスク
+        個人タスク（非公開）
       </button>
     </div>
 
@@ -117,7 +135,7 @@
         </div>
 
         <div class="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 mb-2 px-1">
-          <span>タスク一覧</span>
+          <span id="task-list-title-label">タスク一覧</span>
           <span id="task-count-badge" class="font-semibold text-slate-500 dark:text-slate-400">0件</span>
         </div>
 
@@ -157,21 +175,46 @@
          モーダル郡
          ===================================================================== -->
 
-    <!-- (1) 合言葉認証モーダル -->
+    <!-- (1) ユーザー＆パスワード ログインモーダル -->
     <div id="passcode-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-xs shadow-2xl text-center border border-slate-100 dark:border-slate-700">
-        <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-4">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 dark:border-slate-700">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 mx-auto flex items-center justify-center mb-3">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
         </div>
-        <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-5">合言葉を入力</h2>
+        <h2 class="text-lg font-bold text-center text-slate-800 dark:text-white mb-1">ログイン</h2>
+        <p class="text-xs text-center text-slate-400 mb-5">ユーザー名とパスワードを入力してください</p>
 
-        <input type="password" id="passcode-input" placeholder="合言葉を入力" class="w-full text-center tracking-widest text-xl font-bold bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 mb-2 focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
-        
-        <p id="passcode-error" class="text-xs text-rose-500 font-semibold mb-4 hidden">合言葉が一致しません</p>
+        <!-- ユーザー選択/入力 -->
+        <div class="mb-3.5 text-left">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">ユーザー名</label>
+          <div class="relative">
+            <select id="login-user-select" class="w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-indigo-500">
+              <!-- JSで動的生成 (admin, メンバーA, メンバーB...) -->
+            </select>
+          </div>
+        </div>
+
+        <!-- パスワード入力 -->
+        <div class="mb-4 text-left">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">パスワード</label>
+          <div class="relative">
+            <input type="password" id="passcode-input" placeholder="パスワードを入力" class="w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white pr-10">
+            <button type="button" id="toggle-password-visibility" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+              <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="passcode-error" class="text-xs text-rose-500 font-semibold mb-3 text-center hidden">ユーザー名またはパスワードが一致しません</p>
 
         <button id="passcode-submit-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md shadow-indigo-500/20">
-          ログイン
+          ログインする
         </button>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 text-[11px] text-slate-400 text-center leading-relaxed">
+          管理者: <span class="font-mono text-slate-600 dark:text-slate-300">admin</span> / <span class="font-mono text-slate-600 dark:text-slate-300">bell</span><br>
+          メンバー初期パスワード: <span class="font-mono text-slate-600 dark:text-slate-300">bell</span>
+        </div>
       </div>
     </div>
 
@@ -249,52 +292,58 @@
       </div>
     </div>
 
-    <!-- (3) アプリ設定モーダル（Supabase設定 & 合言葉変更） -->
+    <!-- (3) アプリ設定モーダル（管理者 admin 専用） -->
     <div id="settings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-      <div class="bg-white dark:bg-slate-850 rounded-3xl p-5 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
-          <h2 class="font-bold text-slate-800 dark:text-white text-base">アプリ設定</h2>
+      <div class="bg-white dark:bg-slate-850 rounded-3xl p-5 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base font-bold text-slate-800 dark:text-white">管理者設定</span>
+            <span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold rounded-full">admin</span>
+          </div>
           <button id="close-settings-btn" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <div class="space-y-3.5">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">チーム合言葉 (パスコード)</label>
-            <input type="text" id="custom-passcode-input" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono">
-            <span class="text-[10px] text-slate-400">アプリ起動時に求めるチーム合言葉</span>
+        <div class="space-y-4 overflow-y-auto pr-1 flex-1">
+          <!-- 管理者(admin)のパスワード変更 -->
+          <div class="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">管理者(admin)のパスワード</label>
+            <input type="text" id="admin-passcode-input" class="w-full px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-mono">
+            <span class="text-[10px] text-slate-400">adminでログインする際のパスワード（初期値: bell）</span>
           </div>
 
-          <!-- チームメンバー設定 -->
+          <!-- チームメンバー管理（名前＋パスワード） -->
           <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">チームメンバー管理</span>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">チームメンバー & 個別パスワード</span>
               <span id="member-count-label" class="text-[10px] text-slate-400"></span>
             </div>
-            <p class="text-[10px] text-slate-400 mb-2">名前の変更や追加・削除が可能です（「全員」はシステム共通）。</p>
+            <p class="text-[10px] text-slate-400 mb-2">メンバー名と個別のログインパスワードを設定・管理できます。</p>
             
             <!-- メンバー一覧リスト -->
-            <div id="members-list-container" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 mb-2">
+            <div id="members-list-container" class="space-y-2 max-h-44 overflow-y-auto pr-1 mb-2">
               <!-- JSで動的生成 -->
             </div>
 
             <!-- 新規メンバー追加フォーム -->
-            <div class="flex items-center gap-1.5 mt-2">
-              <input type="text" id="new-member-input" placeholder="新しいメンバー名" maxlength="20" class="flex-1 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs">
-              <button type="button" id="add-member-btn" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors">
-                ＋追加
+            <div class="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 space-y-1.5">
+              <div class="flex items-center gap-1.5">
+                <input type="text" id="new-member-input" placeholder="メンバー名 (例: 山田)" maxlength="20" class="flex-1 px-2.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                <input type="text" id="new-member-pass-input" placeholder="PW (初期: bell)" maxlength="20" class="w-24 px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl text-xs font-mono">
+              </div>
+              <button type="button" id="add-member-btn" class="w-full py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 text-xs font-bold rounded-xl transition-colors">
+                ＋ メンバーを追加
               </button>
             </div>
           </div>
 
           <!-- カテゴリー管理 -->
           <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-            <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center justify-between mb-1">
               <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">カテゴリー管理</span>
               <span id="category-count-label" class="text-[10px] text-slate-400"></span>
             </div>
-            <p class="text-[10px] text-slate-400 mb-2">カテゴリー名の変更や追加・削除が可能です。</p>
             
             <!-- カテゴリー一覧リスト -->
             <div id="categories-list-container" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 mb-2">
@@ -309,20 +358,47 @@
               </button>
             </div>
           </div>
+        </div>
 
-          <button id="save-settings-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold mt-4 shadow-md shadow-indigo-500/20">
-            設定を保存
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0">
+          <button id="save-settings-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-500/20">
+            クラウドへ設定を保存（全端末に反映）
           </button>
 
           <button id="logout-btn" type="button" class="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold mt-2 transition-colors">
-            ログアウト（合言葉画面に戻る）
+            ログアウト
           </button>
         </div>
       </div>
     </div>
 
-    <!-- (4) 確認ダイアログ (削除時などのPoka-yoke) -->
-    <div id="confirm-dialog" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <!-- (4) 個人パスワード変更モーダル（一般ユーザー用） -->
+    <div id="user-password-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+      <div class="bg-white dark:bg-slate-850 rounded-3xl p-5 w-full max-w-xs shadow-2xl border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 mb-3">
+          <h2 class="font-bold text-slate-800 dark:text-white text-sm">パスワードの変更</h2>
+          <button id="close-password-modal-btn" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">対象ユーザー</label>
+            <div id="change-pw-username" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200"></div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">新しいパスワード</label>
+            <input type="password" id="new-personal-pass-input" placeholder="4文字以上で入力" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+          </div>
+          <button id="save-personal-pass-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-500/20">
+            変更を保存
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- (5) 確認ダイアログ (削除時などのPoka-yoke) -->
+    <div id="confirm-dialog" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[70] flex items-center justify-center p-4 hidden">
       <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 w-full max-w-xs shadow-2xl border border-slate-200 dark:border-slate-700 text-center">
         <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 mx-auto flex items-center justify-center mb-3">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
@@ -333,7 +409,7 @@
             キャンセル
           </button>
           <button id="confirm-ok-btn" class="flex-1 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm">
-            削除する
+            実行する
           </button>
         </div>
       </div>
@@ -342,10 +418,10 @@
   </div>
 
   <!-- スクリプトの読み込み -->
-  <script src="./js/config.js?v=3"></script>
-  <script src="./js/db.js?v=3"></script>
-  <script src="./js/calendar.js?v=3"></script>
-  <script src="./js/app.js?v=3"></script>
+  <script src="./js/config.js?v=4"></script>
+  <script src="./js/db.js?v=4"></script>
+  <script src="./js/calendar.js?v=4"></script>
+  <script src="./js/app.js?v=4"></script>
 
   <!-- PWA Service Worker 登録 -->
   <script>

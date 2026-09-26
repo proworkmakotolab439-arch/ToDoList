@@ -6,23 +6,26 @@
  * 直接入力・LocalStorageへ保存することも可能です。
  */
 window.APP_CONFIG = {
-  // デフォルト合言葉
-  DEFAULT_PASSCODE: "bell",
+  // 管理者初期アカウント
+  ADMIN_USER: "admin",
+  DEFAULT_ADMIN_PASS: "bell",
 
-  // Supabase 接続情報（初期値は空。画面上からでも入力・保存可能）
+  // メンバーのデフォルト初期パスワード
+  DEFAULT_MEMBER_PASS: "bell",
+
+  // Supabase 接続情報
   SUPABASE_URL: "https://cdeilrrraattivjrjxxc.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_bxwBFYPmtMP8Vv_14zmvPg_-T5s8we2",
 
-  // チームメンバー一覧
-  MEMBERS: [
-    "全員",
-    "メンバーA",
-    "メンバーB",
-    "メンバーC",
-    "メンバーD",
-    "メンバーE",
+  // デフォルトチームメンバー一覧（初期パスワード付き）
+  DEFAULT_MEMBERS: [
+    { name: "メンバーA", password: "bell" },
+    { name: "メンバーB", password: "bell" },
+    { name: "メンバーC", password: "bell" },
+    { name: "メンバーD", password: "bell" },
+    { name: "メンバーE", password: "bell" }
   ],
 
-  // カテゴリ一覧（自由追加・変更可）
-  CATEGORIES: ["業務", "会議", "雑務", "開発", "連絡", "その他"],
+  // デフォルトカテゴリー一覧（自由追加・変更可）
+  DEFAULT_CATEGORIES: ["業務", "会議", "雑務", "開発", "連絡", "その他"]
 };

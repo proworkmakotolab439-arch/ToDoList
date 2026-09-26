@@ -1,4 +1,4 @@
-const CACHE_NAME = 'team-todo-v3';
+const CACHE_NAME = 'team-todo-v4';
 const ASSETS = [
   './',
   './index.html',
