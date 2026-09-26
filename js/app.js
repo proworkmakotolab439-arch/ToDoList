@@ -29,13 +29,15 @@ document.addEventListener("DOMContentLoaded", () => {
     saveSettingsBtn: document.getElementById("save-settings-btn"),
     logoutBtn: document.getElementById("logout-btn"),
     closeSettingsBtn: document.getElementById("close-settings-btn"),
-    supabaseUrlInput: document.getElementById("supabase-url-input"),
-    supabaseKeyInput: document.getElementById("supabase-key-input"),
     customPasscodeInput: document.getElementById("custom-passcode-input"),
     membersListContainer: document.getElementById("members-list-container"),
     newMemberInput: document.getElementById("new-member-input"),
     addMemberBtn: document.getElementById("add-member-btn"),
     memberCountLabel: document.getElementById("member-count-label"),
+    categoriesListContainer: document.getElementById("categories-list-container"),
+    newCategoryInput: document.getElementById("new-category-input"),
+    addCategoryBtn: document.getElementById("add-category-btn"),
+    categoryCountLabel: document.getElementById("category-count-label"),
 
     userSelect: document.getElementById("user-select"),
     tabAll: document.getElementById("tab-all"),
@@ -139,9 +141,25 @@ document.addEventListener("DOMContentLoaded", () => {
     ).join("");
   }
 
+  // カテゴリーリストの取得（LocalStorage優先、なければconfigのデフォルト）
+  function getCategoryList() {
+    const saved = localStorage.getItem("custom_categories");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error("カテゴリー設定のパースエラー:", e);
+      }
+    }
+    return window.APP_CONFIG.CATEGORIES;
+  }
+
   // カテゴリセレクトボックスの選択肢構築
   function populateCategoryOptions() {
-    const categories = window.APP_CONFIG.CATEGORIES;
+    const categories = getCategoryList();
     
     // フィルター用
     dom.categoryFilter.innerHTML = `<option value="all">すべてのカテゴリ</option>` + 
@@ -588,17 +606,18 @@ document.addEventListener("DOMContentLoaded", () => {
     state.editingTaskId = null;
   }
 
-  // 設定画面の編集中メンバー一覧
+  // 設定画面の編集中メンバー・カテゴリー一覧
   let editingMembers = [];
+  let editingCategories = [];
 
   function openSettingsModal() {
-    dom.supabaseUrlInput.value = localStorage.getItem("supabase_url") || window.APP_CONFIG.SUPABASE_URL;
-    dom.supabaseKeyInput.value = localStorage.getItem("supabase_anon_key") || window.APP_CONFIG.SUPABASE_ANON_KEY;
     dom.customPasscodeInput.value = localStorage.getItem("custom_passcode") || window.APP_CONFIG.DEFAULT_PASSCODE;
     
-    // 現在のメンバー一覧をコピーして描画
+    // 現在のメンバー一覧・カテゴリー一覧をコピーして描画
     editingMembers = [...getMemberList()];
+    editingCategories = [...getCategoryList()];
     renderEditingMembers();
+    renderEditingCategories();
 
     dom.settingsModal.classList.remove("hidden");
   }
@@ -678,8 +697,76 @@ document.addEventListener("DOMContentLoaded", () => {
     editingMembers.push(name);
     dom.newMemberInput.value = "";
     renderEditingMembers();
-    // 追加したアイテムが見えるようにスクロール
     dom.membersListContainer.scrollTop = dom.membersListContainer.scrollHeight;
+  }
+
+  // 設定モーダル内のカテゴリー一覧描画
+  function renderEditingCategories() {
+    dom.categoryCountLabel.textContent = `${editingCategories.length}件`;
+    dom.categoriesListContainer.innerHTML = "";
+
+    if (editingCategories.length === 0) {
+      dom.categoriesListContainer.innerHTML = `<p class="text-[11px] text-slate-400 py-1 text-center">カテゴリーが登録されていません</p>`;
+      return;
+    }
+
+    editingCategories.forEach((cat, index) => {
+      const row = document.createElement("div");
+      row.className = "flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/60 p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80";
+
+      // カテゴリー名入力フィールド（名前変更用）
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = cat;
+      input.maxLength = 20;
+      input.className = "flex-1 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-indigo-500";
+      input.addEventListener("change", (e) => {
+        const val = e.target.value.trim();
+        if (!val) {
+          showToast("カテゴリー名は空にできません", "warning");
+          e.target.value = editingCategories[index];
+          return;
+        }
+        editingCategories[index] = val;
+      });
+
+      // 削除ボタン
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors";
+      delBtn.title = "カテゴリーを削除";
+      delBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>`;
+      delBtn.addEventListener("click", () => {
+        if (editingCategories.length <= 1) {
+          showToast("カテゴリーは最低1件必要です", "warning");
+          return;
+        }
+        editingCategories.splice(index, 1);
+        renderEditingCategories();
+      });
+
+      row.appendChild(input);
+      row.appendChild(delBtn);
+      dom.categoriesListContainer.appendChild(row);
+    });
+  }
+
+  // カテゴリー追加処理
+  function handleAddCategory() {
+    const catName = dom.newCategoryInput.value.trim();
+    if (!catName) {
+      showToast("カテゴリー名を入力してください", "warning");
+      return;
+    }
+    if (editingCategories.includes(catName)) {
+      showToast("すでに同名のカテゴリーが存在します", "warning");
+      return;
+    }
+
+    editingCategories.push(catName);
+    dom.newCategoryInput.value = "";
+    renderEditingCategories();
+    dom.categoriesListContainer.scrollTop = dom.categoriesListContainer.scrollHeight;
   }
 
   function closeSettingsModal() {
@@ -687,8 +774,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function handleSaveSettings() {
-    const url = dom.supabaseUrlInput.value.trim();
-    const key = dom.supabaseKeyInput.value.trim();
     const passcode = dom.customPasscodeInput.value.trim();
 
     if (passcode.length < 4) {
@@ -706,28 +791,37 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 重複チェック
     const uniqueMembers = [...new Set(cleanMembers)];
     if (uniqueMembers.length !== cleanMembers.length) {
       showToast("メンバー名に重複があります", "warning");
       return;
     }
 
+    // 入力中のカテゴリー名から空や重複を除去
+    const cleanCategories = editingCategories
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+
+    if (cleanCategories.length === 0) {
+      showToast("カテゴリーは最低1件登録してください", "warning");
+      return;
+    }
+
+    const uniqueCategories = [...new Set(cleanCategories)];
+    if (uniqueCategories.length !== cleanCategories.length) {
+      showToast("カテゴリー名に重複があります", "warning");
+      return;
+    }
+
     // LocalStorage に保存
     localStorage.setItem("custom_members", JSON.stringify(uniqueMembers));
-
-    if (url) localStorage.setItem("supabase_url", url);
-    else localStorage.removeItem("supabase_url");
-
-    if (key) localStorage.setItem("supabase_anon_key", key);
-    else localStorage.removeItem("supabase_anon_key");
-
+    localStorage.setItem("custom_categories", JSON.stringify(uniqueCategories));
     localStorage.setItem("custom_passcode", passcode);
 
-    // UIのメンバー選択肢を即時更新
+    // UIのメンバー・カテゴリー選択肢を即時更新
     populateMemberOptions();
+    populateCategoryOptions();
 
-    window.dbService.initClient();
     closeSettingsModal();
     showToast("設定を保存しました", "success");
     setTimeout(() => {
@@ -749,6 +843,33 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.settingsBtn.addEventListener("click", openSettingsModal);
     dom.closeSettingsBtn.addEventListener("click", closeSettingsModal);
     dom.saveSettingsBtn.addEventListener("click", handleSaveSettings);
+    
+    // メンバー追加ボタン & Enterキー入力
+    if (dom.addMemberBtn) {
+      dom.addMemberBtn.addEventListener("click", handleAddMember);
+    }
+    if (dom.newMemberInput) {
+      dom.newMemberInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAddMember();
+        }
+      });
+    }
+
+    // カテゴリー追加ボタン & Enterキー入力
+    if (dom.addCategoryBtn) {
+      dom.addCategoryBtn.addEventListener("click", handleAddCategory);
+    }
+    if (dom.newCategoryInput) {
+      dom.newCategoryInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAddCategory();
+        }
+      });
+    }
+
     if (dom.logoutBtn) {
       dom.logoutBtn.addEventListener("click", () => {
         localStorage.removeItem("app_authenticated");
@@ -760,13 +881,6 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("ログアウトしました", "info");
       });
     }
-    dom.addMemberBtn.addEventListener("click", handleAddMember);
-    dom.newMemberInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleAddMember();
-      }
-    });
 
     // ユーザー切替
     dom.userSelect.addEventListener("change", (e) => {
