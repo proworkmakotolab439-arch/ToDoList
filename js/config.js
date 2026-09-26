@@ -6,8 +6,8 @@
  * 直接入力・LocalStorageへ保存することも可能です。
  */
 window.APP_CONFIG = {
-  // デフォルト合言葉（4〜6桁のパスコード）
-  DEFAULT_PASSCODE: "1234",
+  // デフォルト合言葉
+  DEFAULT_PASSCODE: "bell",
 
   // Supabase 接続情報（初期値は空。画面上からでも入力・保存可能）
   SUPABASE_URL: "https://cdeilrrraattivjrjxxc.supabase.co",
