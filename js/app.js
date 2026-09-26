@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsModal: document.getElementById("settings-modal"),
     settingsBtn: document.getElementById("settings-btn"),
     saveSettingsBtn: document.getElementById("save-settings-btn"),
+    logoutBtn: document.getElementById("logout-btn"),
     closeSettingsBtn: document.getElementById("close-settings-btn"),
     supabaseUrlInput: document.getElementById("supabase-url-input"),
     supabaseKeyInput: document.getElementById("supabase-key-input"),
@@ -748,6 +749,17 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.settingsBtn.addEventListener("click", openSettingsModal);
     dom.closeSettingsBtn.addEventListener("click", closeSettingsModal);
     dom.saveSettingsBtn.addEventListener("click", handleSaveSettings);
+    if (dom.logoutBtn) {
+      dom.logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem("app_authenticated");
+        state.isAuthenticated = false;
+        closeSettingsModal();
+        dom.passcodeModal.classList.remove("hidden");
+        dom.passcodeInput.value = "";
+        dom.passcodeInput.focus();
+        showToast("ログアウトしました", "info");
+      });
+    }
     dom.addMemberBtn.addEventListener("click", handleAddMember);
     dom.newMemberInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
