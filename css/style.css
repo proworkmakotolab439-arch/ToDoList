@@ -1,0 +1,35 @@
+/* スマートフォン表示最適化 & カスタムアニメーション */
+@layer utilities {
+  /* スマホタップ時のハイライト抑制 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* スクロールバーの非表示（スマホアプリ風の滑らかなUI） */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* セーフエリア対応（iPhoneホームバー・ノッチ） */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.safe-top {
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
+/* プログレスバー・ローディングアニメーション */
+@keyframes loading-slide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-loading {
+  animation: loading-slide 1.2s infinite ease-in-out;
+}
