@@ -167,13 +167,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // ログイン画面のユーザー選択肢を生成
   function populateLoginUserOptions() {
     const members = state.systemSettings.members || [];
-    let html = `<option value="admin">👑 管理者 (admin)</option>`;
-    html += `<optgroup label="チームメンバー">`;
-    members.forEach(m => {
-      html += `<option value="${m.name}">👤 ${m.name}</option>`;
-    });
-    html += `</optgroup>`;
+    let html = `<option value="" selected></option>`;
+    html += `<option value="admin">admin</option>`;
+    if (members.length > 0) {
+      html += `<optgroup label="チームメンバー">`;
+      members.forEach(m => {
+        html += `<option value="${m.name}">${m.name}</option>`;
+      });
+      html += `</optgroup>`;
+    }
     dom.loginUserSelect.innerHTML = html;
+    dom.loginUserSelect.value = "";
   }
 
   // メンバーセレクトボックスの選択肢構築
@@ -198,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (scope === "personal") {
       // 個人タスクの場合: ログイン中ユーザー自身に固定
       if (state.currentUserRole === "admin") {
-        dom.taskAssigneeSelect.innerHTML = `<option value="admin">admin (管理者)</option>`;
+        dom.taskAssigneeSelect.innerHTML = `<option value="admin">admin</option>`;
       } else {
         dom.taskAssigneeSelect.innerHTML = `<option value="${state.currentUser}">${state.currentUser}</option>`;
       }
@@ -252,8 +256,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       state.isAuthenticated = false;
       dom.passcodeModal.classList.remove("hidden");
+      dom.loginUserSelect.value = "";
       dom.passcodeInput.value = "";
-      setTimeout(() => dom.passcodeInput.focus(), 150);
+      setTimeout(() => dom.loginUserSelect.focus(), 150);
     }
   }
 
@@ -262,9 +267,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectedUser = dom.loginUserSelect.value;
     const inputPass = dom.passcodeInput.value.trim();
 
+    if (!selectedUser) {
+      dom.passcodeError.textContent = "ユーザーを選択してください";
+      dom.passcodeError.classList.remove("hidden");
+      dom.loginUserSelect.focus();
+      return;
+    }
+
     if (!inputPass) {
       dom.passcodeError.textContent = "パスワードを入力してください";
       dom.passcodeError.classList.remove("hidden");
+      dom.passcodeInput.focus();
       return;
     }
 
@@ -303,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dom.passcodeInput.value = "";
 
       updateHeaderUserUI();
-      showToast(`${selectedUser === 'admin' ? '管理者' : selectedUser} としてログインしました`, "success");
+      showToast(`${selectedUser === 'admin' ? 'admin' : selectedUser} としてログインしました`, "success");
       loadTasks();
     } else {
       dom.passcodeError.textContent = "パスワードが一致しません";
@@ -317,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHeaderUserUI() {
     if (state.currentUserRole === "admin") {
       dom.headerUserIcon.textContent = "👑";
-      dom.headerUserName.textContent = "管理者 (admin)";
+      dom.headerUserName.textContent = "admin";
       dom.settingsBtn.classList.remove("hidden");
       dom.changePasswordBtn.classList.add("hidden"); // adminは設定画面でPW変更可能
       dom.userSelect.classList.remove("hidden");
@@ -350,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.passcodeInput.value = "";
     dom.passcodeError.classList.add("hidden");
     populateLoginUserOptions();
-    setTimeout(() => dom.passcodeInput.focus(), 150);
+    setTimeout(() => dom.loginUserSelect.focus(), 150);
 
     showToast("ログアウトしました", "info");
   }
